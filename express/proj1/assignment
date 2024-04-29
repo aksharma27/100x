@@ -1,0 +1,4 @@
+get : no of kidneys and get their health
+post : add a new kidney
+put : replace a kidney and make it healthy
+delete : remove a kidney
