@@ -1,0 +1,2 @@
+1) count the number of requests using middlewares
+2) find the average time your server is taking to handle requests : 

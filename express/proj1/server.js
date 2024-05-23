@@ -1,4 +1,5 @@
 const express = require('express');
+const zod = require('zod');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -30,7 +31,41 @@ var users = [
 console.log(users);
 
 //doctor assignment : 
+
+// AUTHENTICATION : 
+
+// creating a schema for array of number : we need an array of kidneys --> other data isn't acceptable
+const schema = zod.array(zod.number());   //only array of numbers are allowed by zod
+
+
+//  ZOD EMAIL + PASSWORD + COUNTRY = 'US' OR 'IN' SCHEMA : 
+const emailSchema = zod.object({
+    email : zod.string().email(),       //should be a string + email 
+    password : zod.string().min(8), //min lenght of stirng should be 8 characters and max can be any length
+    country : zod.literal("IN").or(zod.literal("US"))
+})
+
+app.get('/health-checkup', (req, res) => {
+    const username = req.header.username;
+    const password = req.headers.password;
+    const kidneyId = req.query.kidneyId;
+
+    if(username != 'abhishek' && password != 'pass') {
+        res.status(400).json({"msg" : "Invalid username or password"});
+        return;
+    }
+    if (kidneyId != 1 && kidneyId != 2) {
+        // res.json({
+            res.status(400).json({message : 'Something went wrong'});
+            return;
+        // });
+    } 
+    //if all checks are successful and they do not return back : 
+    res.json({msg : "You have successfully logged in and your kidney is  fine"});
+});
+
 app.get('/', (req, res) => {
+
     const userkidneys = users[0].kidneys;
     const numberOfKidneys = userkidneys.length;
     let numberOfHealthyKidneys = 0;
@@ -53,6 +88,20 @@ app.get('/', (req, res) => {
 //use express.json to parse the json / db body: it is a middleware
 app.use(express.json());
 app.post('/', (req, res) => {
+
+    //ZOD VALIDATION : 
+    const kidneys = req.body.kidneys;   //array of kidneys : array of numbers
+    const response = schema.safeParse(kidneys);
+    // res.send(response); 
+    if (!response.success) {
+        res.status(411).json({
+            msg : "invalid input"
+        });
+    } else {
+        res.send(response);
+    }
+
+
     const isHealthy = req.body.isHealthy;
     //if want to get a healhty kidney, update it to the json db and if want unhealthy then also get the health to false
     users[0].kidneys.push({
@@ -66,6 +115,12 @@ app.post('/', (req, res) => {
 });
 
 app.put('/', (req, res) => {
+
+    // EDGE CASE : 
+    // if no unhealthy kidney found
+    // COMPLETE THIS ASSIGNMENT : 
+
+
     //make unhealthy to healthy : without adding any extra kidneys :
     for (var i = 0; i < users[0].kidneys.length; i++) {
         users[0].kidneys[i].healthy = true;
@@ -75,6 +130,21 @@ app.put('/', (req, res) => {
 });
 
 app.delete('/', (req, res) => {
+    
+    // EDGE CASE : 
+    // if there are no unhealthy kidneys : do nothing and return 400 status code 
+        let numberOfUnhealthy = 0;
+        //if no unhealthy condition, return status 411:
+        for (let i = 0; i < users[0].kidneyslength; i++) {
+            if (users[0].kidneys[i].healthy == false) numberOfUnhealthy++;
+        }
+        if (numberOfUnhealthy == 0) {
+            res.status(411).send({
+                message : "No unhealthy kidneys found"
+            })
+        }
+
+
     //delete all unhealthy kidneys and update the total number of kidneys : 
     const newKidenysAfterDeletion = [];
     for (let i = 0; i < users[0].kidneys.length; i++) {
@@ -90,6 +160,17 @@ app.delete('/', (req, res) => {
 });
 
 
+
+//ASSIGNMENTS : 
+// 1) RETURN true if a string in a string array the size of the array is 1, else return false : 
+const stringSchema = zod.array(zod.string()).length(1);
+
+app.get('/api/stirng/check', (req, res) => {
+    const res = stringSchema.safeParse(req.params);
+    console.log(res);
+    // if (res) res.send("True");
+    // else res.send("False");
+})
 
 
 
@@ -115,6 +196,7 @@ app.get('/home', (req, res) => {
     const ans = sum(a);
     res.send('hi your answer is ' +  ans);
 });
+
 
 
 app.listen(port, () => {
